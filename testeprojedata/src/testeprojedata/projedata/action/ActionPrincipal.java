@@ -8,10 +8,12 @@ import java.time.Period;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map.Entry;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import testeprojedata.projedata.form.FuncionarioForm;
 import testeprojedata.projedata.form.PessoaForm;
@@ -22,117 +24,94 @@ public class ActionPrincipal {
 
 		try {
 			// ---------------------------------------------------------------------------------------//
-			System.out.println("3.1 – Inserir todos os funcionários, na mesma ordem e informações da tabela acima.");
+			System.out.println("\n3.1 – Inserir todos os funcionários, na mesma ordem e informações da tabela acima.");
 			List<FuncionarioForm> func = this.inserirFuncionario();
 			// func.forEach(System.out::println);
 
 			// ---------------------------------------------------------------------------------------//
-			System.out.println("3.2 – Remover o funcionário “João” da lista.");
-			for (FuncionarioForm aux : func) {
-				if (aux.getPessoa().getNome().equals("João")) {
-					func.remove(aux);
-					break;
-				}
-			}
+			System.out.println("\n3.2 – Remover o funcionário “João” da lista.");
+
+			func.removeIf(aux -> aux.getPessoa().getNome().equals("João"));
+
 			// func.forEach(System.out::println);
 
 			// ---------------------------------------------------------------------------------------//
-			System.out.println("3.3 – Imprimir todos os funcionários com todas suas informações, sendo que:");
+			System.out.println("\n3.3 – Imprimir todos os funcionários com todas suas informações, sendo que:");
 			// • informação de data deve ser exibido no formato dd/mm/aaaa;
 			// • informação de valor numérico deve ser exibida no formatado com
 			// separador de milhar como ponto e decimal como vírgula.
-			for (FuncionarioForm aux : func) {
-				System.out.println(this.retornaFunc(aux));
-			}
+			func.stream().map(this::retornaFunc).forEach(System.out::println);
 
 			// ---------------------------------------------------------------------------------------//
 			System.out.println(
-					"3.4 – Os funcionários receberam 10% de aumento de salário, atualizar a lista de funcionários com novo valor.");
-			for (FuncionarioForm aux : func) {
-				System.out.println(this.retornaFunc(this.retornaAumento(aux)));
-			}
+					"\n3.4 – Os funcionários receberam 10% de aumento de salário, atualizar a lista de funcionários com novo valor.");
+			func.stream().map(aux -> this.retornaFunc(this.retornaAumento(aux))).forEach(System.out::println);
 
 			// ---------------------------------------------------------------------------------------//
 			System.out.println(
-					"3.5 – Agrupar os funcionários por função em um MAP, sendo a chave a “função” e o valor a “lista de funcionários”.");
-			HashMap<String, List<FuncionarioForm>> hashAgrup = new HashMap<String, List<FuncionarioForm>>();
+					"\n3.5 – Agrupar os funcionários por função em um MAP, sendo a chave a “função” e o valor a “lista de funcionários”.");
 
-			for (FuncionarioForm aux : func) {
-				String funcao = aux.getFuncao();
-				List<FuncionarioForm> funcionarios = hashAgrup.get(funcao);
-				if (funcionarios == null) {
-					funcionarios = new ArrayList<>();
-					funcionarios.add(aux);
-					hashAgrup.put(funcao, funcionarios);
-					continue;
-				}
-				funcionarios.add(aux);
-			}
-			// System.out.println(hashAgrup);
+			Map<String, List<FuncionarioForm>> hashAgrup = func.stream()
+					.collect(Collectors.groupingBy(FuncionarioForm::getFuncao));
+			System.out.println(hashAgrup);
 
 			// ---------------------------------------------------------------------------------------//
-			System.out.println("3.6 – Imprimir os funcionários, agrupados por função.");
-			for (Entry<String, List<FuncionarioForm>> agrupar : hashAgrup.entrySet()) {
-				List<FuncionarioForm> aux = agrupar.getValue();
-				String nomesFunc = "";
-				for (FuncionarioForm funcionario : aux) {
-					nomesFunc += funcionario.getPessoa().getNome() + " - ";
-				}
-				System.out.println(agrupar.getKey() + ": " + nomesFunc.substring(0, nomesFunc.length() - 3));
-			}
+			System.out.println("\n3.6 – Imprimir os funcionários, agrupados por função.");
+
+			hashAgrup.forEach((funcao, funcionarios) -> {
+				String nomesFunc = funcionarios.stream().map(aux -> aux.getPessoa().getNome())
+						.collect(Collectors.joining(" - "));
+				System.out.println(funcao + ": " + nomesFunc);
+			});
 
 			// ---------------------------------------------------------------------------------------//
-			System.out.println("3.8 – Imprimir os funcionários que fazem aniversário no mês 10 e 12.");
-			for (FuncionarioForm aux : func) {
-				if (aux.getPessoa().getDataNasc().getMonthValue() == 10
-						|| aux.getPessoa().getDataNasc().getMonthValue() == 12) {
-					System.out.println(aux.getPessoa().getNome() + " /// " + aux.getPessoa().getDataNasc());
-				}
-			}
+			System.out.println("\n3.8 – Imprimir os funcionários que fazem aniversário no mês 10 e 12.");
+			func.stream()
+					.filter(x -> x.getPessoa().getDataNasc().getMonthValue() == 10
+							|| x.getPessoa().getDataNasc().getMonthValue() == 12)
+					.forEach(x -> System.out.println(x.getPessoa().getNome() + " /// " + x.getPessoa().getDataNasc()));
 
 			// ---------------------------------------------------------------------------------------//
-			System.out.println("3.9 – Imprimir o funcionário com a maior idade, exibir os atributos: nome e idade.");
-			FuncionarioForm maiorIdade = func.get(0);
-			for (FuncionarioForm aux : func) {
-				if (aux.getPessoa().getDataNasc().isBefore(maiorIdade.getPessoa().getDataNasc())) {
-					maiorIdade = aux;
-				}
-			}
-			System.out.println(maiorIdade.getPessoa().getNome() + " "
-					+ Period.between(maiorIdade.getPessoa().getDataNasc(), LocalDate.now()).getYears() + " Anos");
+			System.out.println("\n3.9 – Imprimir o funcionário com a maior idade, exibir os atributos: nome e idade.");
+			Optional<FuncionarioForm> maisVelho = func.stream()
+					.min(Comparator.comparing(f -> f.getPessoa().getDataNasc()));
+
+			maisVelho.ifPresent(funcionario -> {
+				int idade = Period.between(funcionario.getPessoa().getDataNasc(), LocalDate.now()).getYears();
+				System.out.println("O funcionário mais velho é " + funcionario.getPessoa().getNome() + ", que tem "
+						+ idade + " anos.");
+			});
 
 			// ---------------------------------------------------------------------------------------//
-			System.out.println("3.10 – Imprimir a lista de funcionários por ordem alfabética.");
-			ArrayList nomes = new ArrayList<>();
-			for (FuncionarioForm aux : func) {
-				nomes.add(aux.getPessoa().getNome());
-			}
-			Collections.sort(nomes);
+			System.out.println("\n3.10 – Imprimir a lista de funcionários por ordem alfabética.");
+
+			List<String> nomes = func.stream().map(funcionario -> funcionario.getPessoa().getNome()).sorted()
+					.collect(Collectors.toList());
+
 			System.out.println(nomes);
 
 			// ---------------------------------------------------------------------------------------//
-			System.out.println("3.11 – Imprimir o total dos salários dos funcionários.");
-			double salarioTotal = 0;
-			for (FuncionarioForm aux : func) {
-				salarioTotal = salarioTotal + aux.getSalario().doubleValue();
-			}
+			System.out.println("\n3.11 – Imprimir o total dos salários dos funcionários.");
+			double salarioTotal = func.stream().mapToDouble(funcionario -> funcionario.getSalario().doubleValue())
+					.sum();
+
 			Locale localBR = new Locale("pt", "BR");
 			NumberFormat formatadorMoeda = NumberFormat.getCurrencyInstance(localBR);
-			System.out.println("o total dos salários dos funcionários: " + formatadorMoeda.format(salarioTotal));
+			System.out.println("O total dos salários dos funcionários é: " + formatadorMoeda.format(salarioTotal));
 
 			// ---------------------------------------------------------------------------------------//
 			System.out.println(
-					"3.12 – Imprimir quantos salários mínimos ganha cada funcionário, considerando que o salário mínimo é R$1212.00.");
+					"\n3.12 – Imprimir quantos salários mínimos ganha cada funcionário, considerando que o salário mínimo é R$1212.00.");
 			DecimalFormat df = new DecimalFormat("#.0");
-			for (FuncionarioForm aux : func) {
-				double qtdSalario = 0;
-				qtdSalario = aux.getSalario().doubleValue() / 1212;
+			double salarioMinimo = 1212.0;
 
-				System.out.println(aux.getPessoa().getNome() + " ganha " + df.format(qtdSalario) + " salários mínimo");
+			func.forEach(funcionario -> {
+				double qtdSalario = funcionario.getSalario().doubleValue() / salarioMinimo;
+				System.out.println(
+						funcionario.getPessoa().getNome() + " ganha " + df.format(qtdSalario) + " salários mínimos");
+			});
 
-			}
-
-			System.out.println("FIM");
+			System.out.println("\nFIM");
 
 		} catch (Exception e) {
 			System.out.println("Ocorreu um erro durante a execução da função executa da classe ActionPrincipal. Erro: "
@@ -156,8 +135,8 @@ public class ActionPrincipal {
 		Locale localBR = new Locale("pt", "BR");
 		NumberFormat formatadorMoeda = NumberFormat.getCurrencyInstance(localBR);
 
-		return "Nome :" + aux.getPessoa().getNome() + "//DataNasc: " + data + "//Função: " + aux.getFuncao()
-				+ "//Salario: " + formatadorMoeda.format(aux.getSalario());
+		return "Nome :" + aux.getPessoa().getNome() + " // DataNasc: " + data + " // Função: " + aux.getFuncao()
+				+ " // Salario: " + formatadorMoeda.format(aux.getSalario());
 	}
 
 	public List<FuncionarioForm> inserirFuncionario() {
